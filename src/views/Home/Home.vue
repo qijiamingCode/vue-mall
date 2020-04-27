@@ -4,14 +4,24 @@
     <NavBar>
       <div slot="middle" class="nav-bar1">首页</div>
     </NavBar>
-    <BScroll class="content" ref='scroll' :probeType='3' :click='true' :pullUpLoad='true' @scroll='contentScroll' @loadMore='loadMore'>
-      <HomeSwiper :banner="banner"></HomeSwiper>
+    <tab-control :title="['流行','新款','其他']" class="con1" @tabClick="tabClick" ref="tabControl1" v-show='isShow1' ></tab-control>
+
+    <BScroll
+      class="content"
+      ref="scroll"
+      :probeType="3"
+      :click="true"
+      :pullUpLoad="true"
+      @scroll="contentScroll"
+      @loadMore="loadMore"
+    >
+      <HomeSwiper :banner="banner" @homeSwiperLoad="swiperLoad"></HomeSwiper>
       <Recommend :recommend="recommend"></Recommend>
       <HomeFuture></HomeFuture>
-      <tab-control :title="['流行','新款','其他']" class="con" @tabClick="tabClick"></tab-control>
+      <tab-control :title="['流行','新款','其他']" class="con" @tabClick="tabClick" ref="tabControl2"></tab-control>
       <Goods :goodsList="goodsList[currentType].list"></Goods>
     </BScroll>
-    <BackTop @click.native = 'backClick' v-show='isShow'></BackTop>
+    <BackTop @click.native="backClick" v-show="isShow"></BackTop>
   </div>
 </template>
 
@@ -28,6 +38,7 @@ import Recommend from "./childComps/Recommend";
 import HomeFuture from "./childComps/HomeFuture";
 
 import { getHomeMultidata, getHomeGoods } from "network/home.js";
+import { debounce } from "common/utils.js";
 
 export default {
   data() {
@@ -40,7 +51,9 @@ export default {
         sell: { page: 0, list: [] }
       },
       currentType: "pop",
-      isShow:false
+      isShow: false,
+      isShow1:false,
+      offsetTop:50
     };
   },
   created() {
@@ -48,6 +61,14 @@ export default {
     this.getHomeGoods("pop");
     this.getHomeGoods("new");
     this.getHomeGoods("sell");
+  },
+  mounted() {
+    const refresh = debounce(this.$refs.scroll.bscroll.refresh, 50);
+    this.$bus.$on("imageLoad", function() {
+      if (this.$refs.scroll) {
+        refresh();
+      }
+    });
   },
   methods: {
     //正常逻辑
@@ -64,18 +85,28 @@ export default {
           this.currentType = "sell";
           break;
       }
+      this.$refs.tabControl1.currentIndex = index
+      this.$refs.tabControl2.currentIndex = index
     },
-    contentScroll(position){
-      this.isShow = -(position.y)>1000
+    contentScroll(position) {
+      //判断backtop显示
+      this.isShow = -(position.y) > 1000;
+      //判断tabcontrol是否吸顶
+      this.isShow1 = -(position.y) > this.offsetTop;
     },
 
-    backClick(){
-      console.log('点了回到顶部');
-      this.$refs.scroll.bscroll.scrollTo(0,0,500)
-      
+    backClick() {
+      console.log("点了回到顶部");
+      this.$refs.scroll.bscroll.scrollTo(0, 0, 500);
     },
-    loadMore(){
-      this.getHomeGoods(this.currentType)
+    loadMore() {
+      this.getHomeGoods(this.currentType);
+    },
+
+    swiperLoad() {
+      console.log("找到tabcontrol高度");
+      console.log(this.$refs.tabControl2.$el.offsetTop);
+      this.offsetTop = this.$refs.tabControl2.$el.offsetTop
     },
 
     //---------------------------请求数据的方法------------------------------------
@@ -96,9 +127,10 @@ export default {
         console.log(res);
         console.log("----------商品数据end---------------------");
         // this.goodsList[type].list = res.data.data.list;
-        this.goodsList[type].list.push(...res.data.data.list)
+        this.goodsList[type].list.push(...res.data.data.list);
         this.goodsList[type].page += 1;
         console.log(this.goodsList[type].page);
+
         this.$refs.scroll.bscroll.finishPullUp();
       });
     }
@@ -117,7 +149,7 @@ export default {
 </script>
 <style scoped>
 .home {
-  height:100vh;
+  height: 100vh;
   position: relative;
 }
 
@@ -131,10 +163,20 @@ export default {
   line-height: 40px;
 }
 
+.con1 {
+    position: sticky;
+  position: -webkit-sticky;
+  top: 43px;
+  z-index: 9;
+  background-color: #fff;
+  height: 40px;
+  line-height: 40px;
+}
+
 .content {
   position: absolute;
-  top:44px;
-  bottom:49px;
+  top: 44px;
+  bottom: 49px;
 }
 </style>
 

@@ -4,7 +4,7 @@
     <Swiper>
       <SwiperItem v-for="item in banner" :key="item.title">
         <a :href="item.link">
-          <img :src="item.image" alt />
+          <img :src="item.image" @load="homeSwiperLoad" />
         </a>
       </SwiperItem>
     </Swiper>
@@ -12,26 +12,35 @@
 </template>
 
 <script>
-import {Swiper,SwiperItem} from "components/common/swiper/index.js";
+import { Swiper, SwiperItem } from "components/common/swiper/index.js";
 
 export default {
   data() {
-    return {};
+    return {
+      isLoad: false
+    };
   },
-  props:{
-      banner:{
-          type:Array
+  props: {
+    banner: {
+      type: Array
+    }
+  },
+  components: {
+    SwiperItem,
+    Swiper
+  },
+  methods: {
+    homeSwiperLoad() {
+      if (!this.isLoad) {
+        this.$emit("homeSwiperLoad");
+        this.isLoad = true
       }
-  },
-  components:{
-      SwiperItem,
-      Swiper
+    }
   }
-    
 };
 </script>
 <style scoped>
-  .child-swiper {
-    margin-top: 44px;
-  }
+.child-swiper {
+  margin-top: 44px;
+}
 </style>
